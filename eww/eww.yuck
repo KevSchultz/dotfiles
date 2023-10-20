@@ -1,0 +1,79 @@
+(defwindow example
+    :monitor 0
+    :geometry (geometry 
+        :x "0%"
+        :y "0px"
+        :width "90%"
+        :height "30px"
+        :anchor "top center"
+    )
+    :stacking "fg"
+    :exclusive true
+    :reserve (struts 
+        :distance "40px" 
+        :side "top"
+    )
+    :windowtype "dock"
+    :wm-ignore false
+    (greeter
+        :name "Hyprland"
+        :text "hi"
+    )
+)
+
+(defwidget greeter [?text name]
+    (box
+        :orientation "horizontal"
+        :halign "center"
+        time
+        (button
+            :onclick "notify-send 'Hello' 'Hello, ${name}!'"
+            "Greet"
+        )
+        (workspaces)
+    )
+)
+
+; Time and Date Widget
+(defvar time-visible true)   ; for :run-while property of below variable
+    ; when this turns true, the polling starts and
+    ; var gets updated with given interval
+
+(defpoll time 
+    :interval "1s" 
+    :initial "initial-value"  ; optional, defaults to poll at startup
+    :run-while time-visible   ; optional, defaults to 'true'
+  `date +%H:%M:%S`
+)
+
+; Hyprland Workspace Switcher Widget
+(deflisten workspaces 
+    :initial "[]" "bash ~/.config/eww/scripts/get-workspaces"
+)
+(deflisten current_workspace 
+    :initial "1" "bash ~/.config/eww/scripts/get-active-workspace"
+)
+(defwidget workspaces []
+    (eventbox 
+        :onscroll "bash ~/.config/eww/scripts/change-active-workspace {} ${current_workspace}" 
+        :class "workspaces-widget"
+        (box 
+            :space-evenly true
+            (label
+                :text "${workspaces}${current_workspace}" 
+                :visible false
+            )
+            (for workspace in workspaces
+                (eventbox 
+                    :onclick "hyprctl dispatch workspace ${workspace.id}"
+                    (box 
+                        :class "workspace-entry ${workspace.id == current_workspace ? "current" : ""} ${workspace.windows > 0 ? "occupied" : "empty"}"
+                        (label 
+                            :text "${workspace.id}"
+                        )
+                    )
+                )               
+            )
+        )
+    )
+)
